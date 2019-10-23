@@ -1,5 +1,6 @@
 import Moment from 'react-moment';
 import React, { useState, useEffect } from 'react';
+import { withChatkitOneToOne } from '@pusher/chatkit-client-react';
 
 import './Chat.css';
 import defaultAvatar from './default-avatar.png';
@@ -23,6 +24,7 @@ function Chat(props) {
       return;
     }
     // TODO: Send message to Chatkit
+    props.chatkit.sendSimpleMessage({ text: pendingMessage })
     setPendingMessage('');
   };
 
@@ -31,20 +33,15 @@ function Chat(props) {
   });
 
   // TODO: Show messages from Chatkit
-  const messages = [
-    {
-      id: 0,
-      isOwnMessage: false,
-      createdAt: '01/01/2019',
-      textContent: 'Hi there! This is hardcoded message.',
-    },
-    {
-      id: 1,
-      isOwnMessage: true,
-      createdAt: '01/01/2019',
-      textContent: 'Hey 👋, so is this.',
-    },
-  ];
+  const messages = props.chatkit.messages.map(m => ({
+    id: m.id,
+    isOwnMessage: m.sender.id === props.chatkit.currentUser.id,
+    createdAt: m.createdAt,
+    // This will only work with simple messages.
+    // To learn more about displaying multi-part messages see
+    // https://pusher.com/docs/chatkit/reference/javascript#messages
+    textContent: m.parts[0].payload.content,
+  }));
 
   return (
     <div className="Chat">
@@ -55,8 +52,10 @@ function Chat(props) {
           alt="avatar"
         />
         <div className="Chat__titlebar__details">
-          {/*TODO: Get other user's name from Chatkit */}
-          <span>[OTHER USERS NAME HERE]</span>
+          <span>{props.chatkit.isLoading
+              ? 'Loading...'
+              : props.chatkit.otherUser.name}
+        </span>
         </div>
       </div>
       <div className="Chat__messages" ref={messageList}>
@@ -123,4 +122,4 @@ function Message({ isOwnMessage, isLatestMessage, createdAt, textContent }) {
   );
 }
 
-export default Chat;
+export default withChatkitOneToOne(Chat);
